@@ -1,0 +1,53 @@
+version: "3"
+services:
+  redis:
+    image: redis:alpine
+    container_name: nexus-redis
+    ports:
+      - "6379:6379"
+    networks: 
+      - frontend
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  db:
+    image: postgres:10.4
+    container_name: nexus-postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file:
+      - ./env/nexus-postgres.env
+    networks: 
+      - backend
+    deploy:
+      placement:
+        constraints: [ node.role == manager ]
+  
+  pgadmin:
+    image: fenglc/pgadmin4
+    container_name: nexus-pgadmin
+    depends_on:
+        - db
+    env_file:
+      - ./env/nexus-pgadmin.env
+    ports:
+      - "30050:5050"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+
+
+networks:
+  frontend:
+  backend:
+volumes:
+  db-data:
+  pgadmin-data:
